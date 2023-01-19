@@ -1,0 +1,538 @@
+[33mcommit 1a2dd3a2588c84fb48bb2c472a08ec91f213b253[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: akulen0k <106932354+akulen0k@users.noreply.github.com>
+Date:   Thu Jan 19 21:05:26 2023 +0300
+
+    1.0
+
+[1mdiff --git a/.gitignore b/.gitignore[m
+[1mnew file mode 100644[m
+[1mindex 0000000..add57be[m
+[1m--- /dev/null[m
+[1m+++ b/.gitignore[m
+[36m@@ -0,0 +1,5 @@[m
+[32m+[m[32mbin/[m
+[32m+[m[32mobj/[m
+[32m+[m[32m/packages/[m
+[32m+[m[32mriderModule.iml[m
+[32m+[m[32m/_ReSharper.Caches/[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools.sln b/DirectoryTools.sln[m
+[1mnew file mode 100644[m
+[1mindex 0000000..3b32b46[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools.sln[m
+[36m@@ -0,0 +1,16 @@[m
+[32m+[m[32m﻿[m
+[32m+[m[32mMicrosoft Visual Studio Solution File, Format Version 12.00[m
+[32m+[m[32mProject("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DirectoryTools", "DirectoryTools\DirectoryTools.csproj", "{92181AE0-2526-40AE-B4A8-AB28D43CD8D5}"[m
+[32m+[m[32mEndProject[m
+[32m+[m[32mGlobal[m
+[32m+[m	[32mGlobalSection(SolutionConfigurationPlatforms) = preSolution[m
+[32m+[m		[32mDebug|Any CPU = Debug|Any CPU[m
+[32m+[m		[32mRelease|Any CPU = Release|Any CPU[m
+[32m+[m	[32mEndGlobalSection[m
+[32m+[m	[32mGlobalSection(ProjectConfigurationPlatforms) = postSolution[m
+[32m+[m		[32m{92181AE0-2526-40AE-B4A8-AB28D43CD8D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU[m
+[32m+[m		[32m{92181AE0-2526-40AE-B4A8-AB28D43CD8D5}.Debug|Any CPU.Build.0 = Debug|Any CPU[m
+[32m+[m		[32m{92181AE0-2526-40AE-B4A8-AB28D43CD8D5}.Release|Any CPU.ActiveCfg = Release|Any CPU[m
+[32m+[m		[32m{92181AE0-2526-40AE-B4A8-AB28D43CD8D5}.Release|Any CPU.Build.0 = Release|Any CPU[m
+[32m+[m	[32mEndGlobalSection[m
+[32m+[m[32mEndGlobal[m
+[1mdiff --git a/DirectoryTools/ArgParser.cs b/DirectoryTools/ArgParser.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..d51aa90[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/ArgParser.cs[m
+[36m@@ -0,0 +1,27 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic static class ArgParser[m
+[32m+[m[32m{[m
+[32m+[m[32m    public static (string, string[]) parseStr(string s)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        var args = s.Split(" ");[m
+[32m+[m[32m        for (int i = 0; i < args.Length; ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            args[i] = args[i].Trim();[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        string command = "";[m
+[32m+[m[32m        string[] arg = new string[Math.Max(0, args.Length - 1)];[m
+[32m+[m[32m        if (args.Length > 0)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            command = args[0];[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        for (int i = 1; i < args.Length; ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            arg[i - 1] = args[i];[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return (command, arg);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/BeautifulOutput.cs b/DirectoryTools/BeautifulOutput.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2096136[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/BeautifulOutput.cs[m
+[36m@@ -0,0 +1,117 @@[m
+[32m+[m[32musing System.Text;[m
+[32m+[m
+[32m+[m[32mnamespace DirectoryTools;[m
+[32m+[m
+[32m+[m[32mpublic static class BeautifulOutput[m
+[32m+[m[32m{[m
+[32m+[m[32m    public static readonly string[] Nulls = { "", "-", " ", "null", "nan" };[m
+[32m+[m[32m    public static readonly string[] Separators = { ",", "\'", "\"", "[", "]" };[m
+[32m+[m[32m    public static readonly char[] ArrOrStr = { '\'', '\"', '[', ']' };[m
+[32m+[m[32m    public static readonly char[] SeparatorsCsv = {','};[m
+[32m+[m[41m    [m
+[32m+[m[41m    [m
+[32m+[m[32m        // converts string to csv format[m
+[32m+[m[32m    private static string ConvString(string s)[m[41m [m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (s is null || Nulls.Contains(s)) return "null";[m
+[32m+[m[32m        if (Separators.Any(x => s.Contains(x))[m[41m [m
+[32m+[m[32m            && (s[0] != '\'' && s[0] != '\"' && s[s.Length - 1] != '\'' && s[s.Length - 1] != '\"'))[m
+[32m+[m[32m                return "\"" + s + '\"';[m
+[32m+[m[32m        return s;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // converts array to csv format[m
+[32m+[m[32m    private static string ConvStrArray(string[] arr)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (arr is null || arr.Length == 0) return "null";[m
+[32m+[m[32m        StringBuilder sr = new StringBuilder("");[m
+[32m+[m[32m        sr.Append("[");[m
+[32m+[m[32m        for (int i = 0; i < arr.Length; ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            sr.Append(BeautifulOutput.ConvString(arr[i]));[m
+[32m+[m[32m            if (i + 1 != arr.Length)[m
+[32m+[m[32m                sr.Append(", ");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        sr.Append("]");[m
+[32m+[m[32m        return sr.ToString();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // parses string from int? or null[m
+[32m+[m[32m    private static string ConvInt(int? v)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (v is null) return "null";[m
+[32m+[m[32m        return Convert.ToString(v);[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // returns the array of maximum length of strings in each column[m
+[32m+[m[32m    private static int[] GetMaxLength(string[][] arr)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        int[] ans = new int[arr[0].Length];[m
+[32m+[m[32m        for (int i = 0; i < ans.Length; ++i) ans[i] = 0;[m
+[32m+[m[41m        [m
+[32m+[m[32m        for (int i = 0; i < arr.GetLength(0); ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            for (int j = 0; j < arr[i].Length; ++j) ans[j] = Math.Max(ans[j], ConvString(arr[i][j]).Length);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return ans;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // creates csv format strings from array of strings[m
+[32m+[m[32m    public static string[] BeautifulStrings(string[][] arr)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (arr.GetLength(0) == 0) return new string[] { "" };[m
+[32m+[m[41m        [m
+[32m+[m[32m        for (int i = 0; i < arr.GetLength(0); ++i)[m
+[32m+[m[32m            if (arr[i].Length != arr[0].Length)[m
+[32m+[m[32m                    throw new Exception("All rows must have equal size.");[m
+[32m+[m[41m        [m
+[32m+[m[32m        int[] spaces = GetMaxLength(arr);[m
+[32m+[m[32m        string[] ans = new string[arr.GetLength(0)];[m
+[32m+[m[32m        const int EXTRA_SPACES = 3; // spaces between column and comma[m
+[32m+[m[41m        [m
+[32m+[m[32m        for (int i = 0; i < arr.GetLength(0); ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            var finalSt = new StringBuilder("");[m
+[32m+[m[32m            for (int j = 0; j < arr[i].Length; ++j)[m
+[32m+[m[32m            {[m
+[32m+[m[32m                // spaces before the word and after to center it[m
+[32m+[m[32m                int before = 0, after = 0;[m
+[32m+[m[32m                before = (spaces[j] - BeautifulOutput.ConvString(arr[i][j]).Length) / 2;[m
+[32m+[m[32m                after = spaces[j] - before - BeautifulOutput.ConvString(arr[i][j]).Length;[m
+[32m+[m[41m                [m
+[32m+[m[32m                if (j != 0) before += EXTRA_SPACES;[m
+[32m+[m[32m                if (j + 1 != arr[i].Length) after += EXTRA_SPACES;[m
+[32m+[m
+[32m+[m[32m                var tmp = new StringBuilder("");[m
+[32m+[m[32m                for (int k = 0; k < before; ++k) tmp.Append(" ");[m
+[32m+[m[32m                tmp.Append(BeautifulOutput.ConvString(arr[i][j]));[m
+[32m+[m[32m                for (int k = 0; k < after; ++k) tmp.Append(" ");[m
+[32m+[m[32m                if (j + 1 != arr[i].Length) tmp.Append(" ");[m
+[32m+[m
+[32m+[m[32m                finalSt.Append(tmp.ToString());[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            ans[i] = finalSt.ToString();[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return ans;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // prints array of strings in Console, truncating it if needed[m
+[32m+[m[32m    public static void BeautifulPrint(string[] arr, int lines = 8)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (arr.Length == 0) return;[m
+[32m+[m[32m        for (int i = 0; i < 50; ++i) Console.Write('-');[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m        for (int i = 0; i < arr.Length && i <= lines; ++i)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            if (i != lines)[m
+[32m+[m[32m                Console.WriteLine(arr[i]);[m
+[32m+[m[32m            else Console.WriteLine("...");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        for (int i = 0; i < 50; ++i) Console.Write('-');[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/CatCommand.cs b/DirectoryTools/Commands/CatCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..6ed4cec[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/CatCommand.cs[m
+[36m@@ -0,0 +1,36 @@[m
+[32m+[m
+[32m+[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class CatCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (args.Length < 1)[m
+[32m+[m[32m            throw new Exception("Cat must have at least one argument");[m
+[32m+[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m        if (File.Exists(path + "/" + args[0]) || File.Exists(args[0]))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            string filePath = File.Exists(path + "/" + args[0]) ? path + "/" + args[0] : args[0];[m
+[32m+[m[32m            using (var sr = new StreamReader(filePath))[m
+[32m+[m[32m            {[m
+[32m+[m[32m                for (int i = 0; i < 20 && !sr.EndOfStream; ++i)[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    string s = sr.ReadLine();[m
+[32m+[m[32m                    Console.WriteLine(s);[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        else[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine($"File wasn't found");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("This command prints selected file into cmd.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/CdCommand.cs b/DirectoryTools/Commands/CdCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..d65526a[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/CdCommand.cs[m
+[36m@@ -0,0 +1,37 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class CdCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (args.Length < 1)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine("cd must have at least one argument");[m
+[32m+[m[32m            return;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m        if (Directory.Exists(path + "/" + args[0]))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            path += "/" + args[0];[m
+[32m+[m[32m            DirectoryInfo di = new DirectoryInfo(path);[m
+[32m+[m[32m            path = di.FullName;[m
+[32m+[m[32m            Console.WriteLine($"New path {path}");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        else if (Directory.Exists(args[0]))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            path = args[0];[m
+[32m+[m[32m            Console.WriteLine($"New path {path}");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        else[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine("This directory does not exist");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("Use this command to travel through directories.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/HelpCommand.cs b/DirectoryTools/Commands/HelpCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b822794[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/HelpCommand.cs[m
+[36m@@ -0,0 +1,22 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class HelpCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m        Console.WriteLine(  "- Cat\n"[m
+[32m+[m[32m                          + "- cd\n"[m
+[32m+[m[32m                          + "- ps\n"[m
+[32m+[m[32m                          + "- touch\n"[m
+[32m+[m[32m                          + "- help\n"[m
+[32m+[m[32m                          + "- show"[m
+[32m+[m[32m        );[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("This command prints all available commands.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/ICommandDir.cs b/DirectoryTools/Commands/ICommandDir.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..387e47d[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/ICommandDir.cs[m
+[36m@@ -0,0 +1,8 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m
+[32m+[m[32mpublic interface ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args);[m
+[32m+[m[32m    public void _getHelpMsg();[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/PsCommand.cs b/DirectoryTools/Commands/PsCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..7e7b628[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/PsCommand.cs[m
+[36m@@ -0,0 +1,30 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class PsCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m        var allList = new List<string[]>();[m
+[32m+[m[32m        foreach (var v in Directory.GetDirectories(path).ToList())[m
+[32m+[m[32m        {[m
+[32m+[m[32m            allList.Add(new []{"<DIR>", new DirectoryInfo(v).Name, Directory.GetCreationTime(v).ToString()});[m
+[32m+[m[32m        }[m
+[32m+[m[32m        foreach (var v in Directory.GetFiles(path).ToList())[m
+[32m+[m[32m        {[m
+[32m+[m[32m            allList.Add(new []{"<FILE>", new FileInfo(v).Name, File.GetCreationTime(v).ToString()});[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        var bf = BeautifulOutput.BeautifulStrings(allList.ToArray());[m
+[32m+[m[32m        foreach (var v in bf)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine(v);[m
+[32m+[m[32m        }[m
+[32m+[m[32m        Console.WriteLine();[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("This command prints selected file into cmd.");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/ShowCommand.cs b/DirectoryTools/Commands/ShowCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..d28f311[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/ShowCommand.cs[m
+[36m@@ -0,0 +1,45 @@[m
+[32m+[m[32musing System.ComponentModel.Design;[m
+[32m+[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class ShowCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    private void dfs(string path, int curD = 0, int maxDepth = 2, int spaces = 3)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        string space = "";[m
+[32m+[m[32m        for (int i = 0; i < spaces * curD; ++i) space += " ";[m[41m [m
+[32m+[m[32m        foreach (var v in Directory.GetDirectories(path).ToList())[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine(space + new DirectoryInfo(v).Name);[m
+[32m+[m[32m            if (curD != maxDepth)[m
+[32m+[m[32m                dfs(v, curD + 1, maxDepth, spaces);[m
+[32m+[m[32m        }[m
+[32m+[m[32m        foreach (var v in Directory.GetFiles(path).ToList())[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine(space + new FileInfo(v).Name);[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (Directory.Exists(path) || (args.Length > 0 && Directory.Exists(args[0])))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            string dPath = path;[m
+[32m+[m[32m            if (args.Length > 0 && Directory.Exists(args[0]))[m
+[32m+[m[32m            {[m
+[32m+[m[32m                dPath = args[0];[m
+[32m+[m[32m            }[m
+[32m+[m[32m            Console.WriteLine();[m
+[32m+[m[32m            dfs(dPath);[m
+[32m+[m[32m            Console.WriteLine();[m
+[32m+[m[32m        }[m
+[32m+[m[32m        else[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine("Invalid directory");[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("Show the structed of the directory");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/Commands/TouchCommand.cs b/DirectoryTools/Commands/TouchCommand.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2b95700[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Commands/TouchCommand.cs[m
+[36m@@ -0,0 +1,22 @@[m
+[32m+[m[32mnamespace DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mpublic class TouchCommand : ICommandDir[m
+[32m+[m[32m{[m
+[32m+[m[32m    public void ExecuteCommand(ref string path, string[] args)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if (!File.Exists(path + "/" + args[0]))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            File.Create(path + "/" + args[0]).Close();[m
+[32m+[m[32m            Console.WriteLine($"Successfully created file {args[0]}");[m
+[32m+[m[32m        }[m
+[32m+[m[32m        else[m
+[32m+[m[32m        {[m
+[32m+[m[32m            Console.WriteLine($"File {args[0]} is already exsists");[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void _getHelpMsg()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        Console.WriteLine("Create file in current directory");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/DirectoryTools.cs b/DirectoryTools/DirectoryTools.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..9745012[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/DirectoryTools.cs[m
+[36m@@ -0,0 +1,47 @@[m
+[32m+[m[32musing DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mnamespace DirectoryTools;[m
+[32m+[m
+[32m+[m[32mpublic class DirectoryTools[m
+[32m+[m[32m{[m
+[32m+[m[32m    private string _path;[m
+[32m+[m
+[32m+[m[32m    private Dictionary<string, ICommandDir> _allCommands =[m
+[32m+[m[32m        new Dictionary<string, ICommandDir>()[m
+[32m+[m[32m        {[m
+[32m+[m[32m            {"Cat", new CatCommand()},[m
+[32m+[m[32m            {"cd", new CdCommand()},[m
+[32m+[m[32m            {"ps", new PsCommand()},[m
+[32m+[m[32m            {"touch", new TouchCommand()},[m
+[32m+[m[32m            {"help", new HelpCommand()},[m
+[32m+[m[32m            {"show", new ShowCommand()}[m
+[32m+[m[32m        };[m
+[32m+[m[41m    [m
+[32m+[m[32m    public DirectoryTools()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        _path = Directory.GetCurrentDirectory();[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void StartWorking()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        while (true)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            var (command, args) = ArgParser.parseStr(Console.ReadLine());[m
+[32m+[m[32m            if (_allCommands.ContainsKey(command))[m
+[32m+[m[32m            {[m
+[32m+[m[32m                if (args.ToList().Contains("--help"))[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    _allCommands[command]._getHelpMsg();[m
+[32m+[m[32m                }[m
+[32m+[m[32m                else[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    _allCommands[command].ExecuteCommand(ref _path, args);[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m[32m            else[m
+[32m+[m[32m            {[m
+[32m+[m[32m                Console.WriteLine($"Comand {command} was not found.");[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/DirectoryTools/DirectoryTools.csproj b/DirectoryTools/DirectoryTools.csproj[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b9de063[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/DirectoryTools.csproj[m
+[36m@@ -0,0 +1,10 @@[m
+[32m+[m[32m<Project Sdk="Microsoft.NET.Sdk">[m
+[32m+[m
+[32m+[m[32m    <PropertyGroup>[m
+[32m+[m[32m        <OutputType>Exe</OutputType>[m
+[32m+[m[32m        <TargetFramework>net6.0</TargetFramework>[m
+[32m+[m[32m        <ImplicitUsings>enable</ImplicitUsings>[m
+[32m+[m[32m        <Nullable>enable</Nullable>[m
+[32m+[m[32m    </PropertyGroup>[m
+[32m+[m
+[32m+[m[32m</Project>[m
+[1mdiff --git a/DirectoryTools/Program.cs b/DirectoryTools/Program.cs[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2345f43[m
+[1m--- /dev/null[m
+[1m+++ b/DirectoryTools/Program.cs[m
+[36m@@ -0,0 +1,14 @@[m
+[32m+[m[32m﻿[m
+[32m+[m
+[32m+[m[32musing DirectoryTools.Commands;[m
+[32m+[m
+[32m+[m[32mnamespace DirectoryTools[m
+[32m+[m[32m{[m
+[32m+[m[32m    class Program[m
+[32m+[m[32m    {[m
+[32m+[m[32m        public static void Main(string[] args)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            new DirectoryTools().StartWorking();[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
